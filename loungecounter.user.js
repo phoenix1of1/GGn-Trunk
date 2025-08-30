@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      1.2
 // @description  Count lines you send in The Lounge with persistence, reset, target changer, and progress bar.
-// @match        http://localhost:(add port)/*
+// @match        http://localhost:9000/*
 // @grant        none
 // ==/UserScript==
 
@@ -29,6 +29,8 @@
                 window.__lineCounterActive = false;
                 removeCounter();
             }
+            // Always remove counter and listeners if not in the valid channel
+            removeCounter();
         }
     }
 
@@ -52,6 +54,8 @@
     }
 
     function activateCounter() {
+        // Prevent duplicate UI if already present
+        if (document.getElementById('thelounge-line-counter-container')) return;
         const STORAGE_KEY = "thelounge_line_counter";
         let state = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {
             count: 0,
@@ -259,5 +263,11 @@
     // Initial check and listen for hash changes
     window.addEventListener('hashchange', onHashChange);
     onHashChange();
+
+    // Also observe DOM changes to detect channel switches in TheLounge SPA
+    const loungeChannelObserver = new MutationObserver(() => {
+        onHashChange();
+    });
+    loungeChannelObserver.observe(document.body, { childList: true, subtree: true });
 
 })();
